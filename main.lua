@@ -129,41 +129,17 @@ local frame = create("Frame", sg, {
 	Visible = false
 })
 create("UICorner", frame, {CornerRadius = UDim.new(0, 6)})
--- 移除 RGB 邊框，改為固定藍色
-local stroke = create("UIStroke", frame, {Thickness = 1.5, Color = Color3.fromRGB(0, 120, 255)})
+local stroke = create("UIStroke", frame, {Thickness = 1.5, Color = Color3.fromRGB(80, 80, 90)})
 
 -- 標題列
-local titleBar = create("Frame", frame, {Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = Color3.fromRGB(30, 30, 34)})
+local titleBar = create("Frame", frame, {Size = UDim2.new(1, 0, 0, 26), BackgroundColor3 = Color3.fromRGB(30, 30, 34)})
 create("UICorner", titleBar, {CornerRadius = UDim.new(0, 6)})
-
--- 正中間上方加入「(aimbot狙擊最強)」
-create("TextLabel", titleBar, {
-	Size = UDim2.new(1, 0, 0, 16),
-	Position = UDim2.new(0, 0, 0, 2),
-	BackgroundTransparency = 1,
-	Text = "(aimbot狙擊最強)",
-	TextColor3 = Color3.fromRGB(0, 180, 255),
-	TextSize = 11,
-	Font = Enum.Font.Code,
-	TextXAlignment = Enum.TextXAlignment.Center
-})
-
--- 原本的「小杰OvO」
-create("TextLabel", titleBar, {
-	Size = UDim2.new(1, -10, 0, 18),
-	Position = UDim2.new(0, 10, 0, 16),
-	BackgroundTransparency = 1,
-	Text = "小杰OvO",
-	TextColor3 = Color3.fromRGB(180, 180, 190),
-	TextSize = 12,
-	Font = Enum.Font.Code,
-	TextXAlignment = Enum.TextXAlignment.Left
-})
+create("TextLabel", titleBar, {Size = UDim2.new(1, -10, 1, 0), Position = UDim2.new(0, 10, 0, 0), BackgroundTransparency = 1, Text = "小杰OvO", TextColor3 = Color3.fromRGB(180, 180, 190), TextSize = 12, Font = Enum.Font.Code, TextXAlignment = Enum.TextXAlignment.Left})
 
 local closeBtn = create("TextButton", titleBar, {Size = UDim2.new(0, 30, 1, 0), Position = UDim2.new(1, -30, 0, 0), BackgroundTransparency = 1, Text = "✕", TextColor3 = Color3.fromRGB(180, 180, 190), TextSize = 12, Font = Enum.Font.SourceSansBold})
 
 -- 分頁列
-local tabContainer = create("Frame", frame, {Size = UDim2.new(1, -16, 0, 24), Position = UDim2.new(0, 8, 0, 42), BackgroundColor3 = Color3.fromRGB(35, 35, 40)})
+local tabContainer = create("Frame", frame, {Size = UDim2.new(1, -16, 0, 24), Position = UDim2.new(0, 8, 0, 32), BackgroundColor3 = Color3.fromRGB(35, 35, 40)})
 create("UICorner", tabContainer, {CornerRadius = UDim.new(0, 4)})
 
 local function createTab(name, xPos, width)
@@ -176,7 +152,7 @@ local tabWorld = createTab("world", 128, 60)
 local tabMisc = createTab("misc", 190, 50)
 
 -- 內容面板容器
-local contentArea = create("Frame", frame, {Size = UDim2.new(1, -16, 1, -78), Position = UDim2.new(0, 8, 0, 70), BackgroundColor3 = Color3.fromRGB(28, 28, 32)})
+local contentArea = create("Frame", frame, {Size = UDim2.new(1, -16, 1, -68), Position = UDim2.new(0, 8, 0, 60), BackgroundColor3 = Color3.fromRGB(28, 28, 32)})
 create("UICorner", contentArea, {CornerRadius = UDim.new(0, 4)})
 create("UIStroke", contentArea, {Thickness = 1, Color = Color3.fromRGB(50, 50, 58)})
 
@@ -823,6 +799,8 @@ for _, p in ipairs(Players:GetPlayers()) do setupESP(p) end
 Players.PlayerAdded:Connect(setupESP)
 
 RunService.RenderStepped:Connect(function(deltaTime)
+	if frame.Visible then stroke.Color = Color3.fromHSV((tick() * 0.5) % 1, 1, 1) end
+
 	-- 旋轉準心渲染與開關控制
 	if crosshairOn then
 		if not screenGui or not screenGui.Parent then
