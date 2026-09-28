@@ -154,6 +154,9 @@ local contentArea = create("Frame", frame, {Size = UDim2.new(1, -16, 1, -68), Po
 create("UICorner", contentArea, {CornerRadius = UDim.new(0, 4)})
 create("UIStroke", contentArea, {Thickness = 1, Color = Color3.fromRGB(50, 50, 58)})
 
+-- 宣告全域變數方便後續快捷鍵控制
+local aimToggleBtnRef = nil
+
 -- 共用開關建立函式
 local function makeToggle(parent, text, yPos, defaultState, callback)
 	local btn = create("TextButton", parent, {
@@ -175,7 +178,14 @@ local function makeToggle(parent, text, yPos, defaultState, callback)
 		btn.TextColor3 = state and C_VIS or C_HID
 		callback(state)
 	end)
-	return btn
+	return btn, function(newState)
+		if state ~= newState then
+			state = newState
+			btn.Text = (state and "  [☑] " or "  [  ] ") .. text
+			btn.TextColor3 = state and C_VIS or C_HID
+			callback(state)
+		end
+	end
 end
 
 -------------------------------------------------------------
@@ -216,7 +226,9 @@ local sliderBtn = create("TextButton", sliderBg, {Size = UDim2.new(1, 0, 1, 0), 
 -------------------------------------------------------------
 local pageAim = create("Frame", contentArea, {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false})
 
-makeToggle(pageAim, "aimbot active (瞄準總開關)", 15, aimbotActive, function(s) aimbotActive = s end)
+local _, setAimActiveState = makeToggle(pageAim, "aimbot active (瞄準總開關)", 15, aimbotActive, function(s) aimbotActive = s end)
+aimToggleBtnRef = setAimActiveState
+
 makeToggle(pageAim, "fov circle (顯示範圍圈)", 55, fovCircleEnabled, function(s) fovCircleEnabled = s end)
 makeToggle(pageAim, "fov rgb (彩虹炫彩範圍圈)", 95, fovRgbOn, function(s) fovRgbOn = s end)
 
@@ -322,7 +334,7 @@ local flyFill = create("Frame", flyBg, {Size = UDim2.new((flySpeedVal - 1) / 49,
 create("UICorner", flyFill, {CornerRadius = UDim.new(1, 0)})
 local flyBtn = create("TextButton", flyBg, {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = ""})
 
--- 「改皮」按鈕（點擊後載入你提供的腳本）
+-- 「改皮」按鈕
 local skinBtn = create("TextButton", pageMisc, {
 	Size = UDim2.new(0, 210, 0, 26),
 	Position = UDim2.new(0, 15, 0, 215),
@@ -335,7 +347,6 @@ local skinBtn = create("TextButton", pageMisc, {
 })
 create("UICorner", skinBtn, {CornerRadius = UDim.new(0, 4)})
 skinBtn.MouseButton1Click:Connect(function()
-	-- 載入你提供的加密腳本
 	local v0dVbwky9xym=string.len("p3XBN")
 	local qX374vraVSMA7U3TL2=tostring(7)
 	local kPS4FcLt1Zxn98e=bit32.bxor(135,133)
@@ -770,7 +781,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -------------------------------------------------------------
--- 按鈕與介面互動
+-- 按鈕與介面互動 & 快捷鍵設定 (K開關選單、B開關Aimbot)
 -------------------------------------------------------------
 local function applyDrag(obj)
 	local dragging, isDragged, start, pos
@@ -801,4 +812,18 @@ lockBtn.MouseButton1Click:Connect(function()
 	uiLocked = not uiLocked
 	lockBtn.Text = "鎖定UI：" .. (uiLocked and "開" or "關")
 	lockBtn.TextColor3 = uiLocked and C_VIS or C_HID
+end)
+
+-- 鍵盤快捷鍵監聽
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if not gameProcessed then
+		if input.KeyCode == Enum.KeyCode.K then
+			frame.Visible = not frame.Visible
+		elseif input.KeyCode == Enum.KeyCode.B then
+			aimbotActive = not aimbotActive
+			if aimToggleBtnRef then
+				aimToggleBtnRef(aimbotActive)
+			end
+		end
+	end
 end)
