@@ -6,37 +6,39 @@ local Lighting = game:GetService("Lighting")
 local LP = Players.LocalPlayer
 local Cam = workspace.CurrentCamera
 local PlayerGui = LP:WaitForChild("PlayerGui")
+local Mouse = LP:GetMouse()
 
 -- 狀態變數
 local uiLocked = false
 local target = nil
 
--- Aimbot 總開關預設改為 false (關閉)、FOV 圓圈顯示開關、FOV RGB 彩虹開關
-local aimbotActive = false
-local fovCircleEnabled = true
+-- Aimbot 總開關預設改為 true (開啟)、FOV 圓圈顯示開關 (預設關閉)、FOV RGB 彩虹開關
+local aimbotActive = true
+local fovCircleEnabled = false
 local fovRgbOn = true
 local aimbotMaxDist = 200 -- Aimbot 預設距離限制 200
 
--- ESP 細節功能開關
-local espEnabled = false
+-- ESP 細節功能開關 (ESP 總開關預設開啟)
+local espEnabled = true
 local boxEsp = true
 local nameEsp = true
 local healthEsp = true
 local distEsp = true
 
--- World (世界) 功能開關與數值
-local fullbrightOn = false
+-- World (世界) 功能開關與數值 (燈光預設開啟、粉色、濃度100)
+local fullbrightOn = true
 local fullbrightVal = 2   
-local lightColorDensity = 50 
+local lightColorDensity = 100 
 local customFovOn = false
 local targetFov = 70      
 
--- Misc 功能開關與數值
+-- Misc 功能開關與數值 (旋轉準心預設開啟)
 local speedHackOn = false
 local walkSpeedVal = 16
 local noclipOn = false
 local flyOn = false
 local flySpeedVal = 5
+local crosshairOn = true
 
 -- Aimbot FOV 數值
 local aimFovVal = 120
@@ -49,8 +51,9 @@ local origAmbient = Lighting.Ambient
 local origColorShift_Bottom = Lighting.ColorShift_Bottom
 local origColorShift_Top = Lighting.ColorShift_Top
 
--- 光線顏色設定
+-- 光線顏色設定 (預設粉色 Color3.fromRGB(255, 105, 180))
 local lightColors = {
+	Color3.fromRGB(255, 105, 180), -- 粉色
 	Color3.fromRGB(255, 255, 255), 
 	Color3.fromRGB(255, 50, 50),   
 	Color3.fromRGB(50, 255, 50),   
@@ -59,14 +62,13 @@ local lightColors = {
 	Color3.fromRGB(255, 255, 0),   
 	Color3.fromRGB(0, 255, 255),   
 	Color3.fromRGB(255, 128, 0),   
-	Color3.fromRGB(180, 0, 255),   
-	Color3.fromRGB(255, 100, 150)  
+	Color3.fromRGB(180, 0, 255)  
 }
 local lightColorIndex = 1
 local customLightColor = lightColors[1]
 
--- 設定與自定義顏色
-local maxDist = 150
+-- 設定與自定義顏色 (ESP 距離預設變 500)
+local maxDist = 500
 local maxDistLimit = 500
 local minDist = 0
 local C_VIS = Color3.fromRGB(0, 255, 100) 
@@ -127,17 +129,41 @@ local frame = create("Frame", sg, {
 	Visible = false
 })
 create("UICorner", frame, {CornerRadius = UDim.new(0, 6)})
-local stroke = create("UIStroke", frame, {Thickness = 1.5, Color = Color3.fromRGB(80, 80, 90)})
+-- 移除 RGB 邊框，改為固定藍色
+local stroke = create("UIStroke", frame, {Thickness = 1.5, Color = Color3.fromRGB(0, 120, 255)})
 
 -- 標題列
-local titleBar = create("Frame", frame, {Size = UDim2.new(1, 0, 0, 26), BackgroundColor3 = Color3.fromRGB(30, 30, 34)})
+local titleBar = create("Frame", frame, {Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = Color3.fromRGB(30, 30, 34)})
 create("UICorner", titleBar, {CornerRadius = UDim.new(0, 6)})
-create("TextLabel", titleBar, {Size = UDim2.new(1, -10, 1, 0), Position = UDim2.new(0, 10, 0, 0), BackgroundTransparency = 1, Text = "小杰OvO", TextColor3 = Color3.fromRGB(180, 180, 190), TextSize = 12, Font = Enum.Font.Code, TextXAlignment = Enum.TextXAlignment.Left})
+
+-- 正中間上方加入「(aimbot狙擊最強)」
+create("TextLabel", titleBar, {
+	Size = UDim2.new(1, 0, 0, 16),
+	Position = UDim2.new(0, 0, 0, 2),
+	BackgroundTransparency = 1,
+	Text = "(aimbot狙擊最強)",
+	TextColor3 = Color3.fromRGB(0, 180, 255),
+	TextSize = 11,
+	Font = Enum.Font.Code,
+	TextXAlignment = Enum.TextXAlignment.Center
+})
+
+-- 原本的「小杰OvO」
+create("TextLabel", titleBar, {
+	Size = UDim2.new(1, -10, 0, 18),
+	Position = UDim2.new(0, 10, 0, 16),
+	BackgroundTransparency = 1,
+	Text = "小杰OvO",
+	TextColor3 = Color3.fromRGB(180, 180, 190),
+	TextSize = 12,
+	Font = Enum.Font.Code,
+	TextXAlignment = Enum.TextXAlignment.Left
+})
 
 local closeBtn = create("TextButton", titleBar, {Size = UDim2.new(0, 30, 1, 0), Position = UDim2.new(1, -30, 0, 0), BackgroundTransparency = 1, Text = "✕", TextColor3 = Color3.fromRGB(180, 180, 190), TextSize = 12, Font = Enum.Font.SourceSansBold})
 
 -- 分頁列
-local tabContainer = create("Frame", frame, {Size = UDim2.new(1, -16, 0, 24), Position = UDim2.new(0, 8, 0, 32), BackgroundColor3 = Color3.fromRGB(35, 35, 40)})
+local tabContainer = create("Frame", frame, {Size = UDim2.new(1, -16, 0, 24), Position = UDim2.new(0, 8, 0, 42), BackgroundColor3 = Color3.fromRGB(35, 35, 40)})
 create("UICorner", tabContainer, {CornerRadius = UDim.new(0, 4)})
 
 local function createTab(name, xPos, width)
@@ -150,7 +176,7 @@ local tabWorld = createTab("world", 128, 60)
 local tabMisc = createTab("misc", 190, 50)
 
 -- 內容面板容器
-local contentArea = create("Frame", frame, {Size = UDim2.new(1, -16, 1, -68), Position = UDim2.new(0, 8, 0, 60), BackgroundColor3 = Color3.fromRGB(28, 28, 32)})
+local contentArea = create("Frame", frame, {Size = UDim2.new(1, -16, 1, -78), Position = UDim2.new(0, 8, 0, 70), BackgroundColor3 = Color3.fromRGB(28, 28, 32)})
 create("UICorner", contentArea, {CornerRadius = UDim.new(0, 4)})
 create("UIStroke", contentArea, {Thickness = 1, Color = Color3.fromRGB(50, 50, 58)})
 
@@ -334,10 +360,15 @@ local flyFill = create("Frame", flyBg, {Size = UDim2.new((flySpeedVal - 1) / 49,
 create("UICorner", flyFill, {CornerRadius = UDim.new(1, 0)})
 local flyBtn = create("TextButton", flyBg, {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = ""})
 
+-- 旋轉準心開關 (預設開啟)
+makeToggle(pageMisc, "旋轉準心 (Crosshair)", 215, crosshairOn, function(s)
+	crosshairOn = s
+end)
+
 -- 「改皮」按鈕
 local skinBtn = create("TextButton", pageMisc, {
 	Size = UDim2.new(0, 210, 0, 26),
-	Position = UDim2.new(0, 15, 0, 215),
+	Position = UDim2.new(0, 15, 0, 250),
 	BackgroundColor3 = Color3.fromRGB(40, 40, 45),
 	Text = "  [👕] 改皮",
 	TextColor3 = Color3.fromRGB(180, 180, 180),
@@ -456,6 +487,193 @@ skinBtn.MouseButton1Click:Connect(function()
 	  error("Mnx | Public Enemy : "..tostring(uy8s9LYFgW07V13iEb))
 	end
 end)
+
+-- 風格樣式清單（預設第一個為「賽博龐克紫」）
+local styles = {
+	{Name = "賽博龐克紫 (Cyber Purple)", ClockTime = 2, Ambient = Color3.fromRGB(80, 20, 100), OutdoorAmbient = Color3.fromRGB(50, 10, 70), Brightness = 1.5},
+	{Name = "預設光影 (Default)", ClockTime = 14, Ambient = Color3.fromRGB(120, 120, 120), OutdoorAmbient = Color3.fromRGB(120, 120, 120), Brightness = 2},
+	{Name = "極夜黑潮 (Midnight)", ClockTime = 0, Ambient = Color3.fromRGB(20, 20, 40), OutdoorAmbient = Color3.fromRGB(10, 10, 25), Brightness = 0.5},
+	{Name = "血色末日 (Blood Red)", ClockTime = 19, Ambient = Color3.fromRGB(100, 20, 20), OutdoorAmbient = Color3.fromRGB(70, 10, 10), Brightness = 1.2}
+}
+local styleIndex = 1
+local activeStyle = styles[1]
+
+local styleBtn = create("TextButton", pageMisc, {
+	Size = UDim2.new(0, 210, 0, 26),
+	Position = UDim2.new(0, 15, 0, 285),
+	BackgroundColor3 = Color3.fromRGB(40, 40, 45),
+	Text = "  [☀] 風格: 賽博龐克紫",
+	TextColor3 = Color3.fromRGB(180, 180, 180),
+	TextSize = 12,
+	Font = Enum.Font.Code,
+	TextXAlignment = Enum.TextXAlignment.Left
+})
+create("UICorner", styleBtn, {CornerRadius = UDim.new(0, 4)})
+
+local function applyStyle(st)
+	activeStyle = st
+	for _, child in ipairs(Lighting:GetChildren()) do
+		if child:IsA("Sky") or child:IsA("Atmosphere") or child:IsA("ColorCorrectionEffect") then
+			child:Destroy()
+		end
+	end
+	Lighting.ClockTime = st.ClockTime
+	Lighting.Ambient = st.Ambient
+	Lighting.OutdoorAmbient = st.OutdoorAmbient
+	Lighting.Brightness = st.Brightness
+	Lighting.FogEnd = 100000
+end
+
+-- 啟動時套用預設風格
+applyStyle(activeStyle)
+
+styleBtn.MouseButton1Click:Connect(function()
+	styleIndex = styleIndex % #styles + 1
+	local st = styles[styleIndex]
+	styleBtn.Text = "  [☀] 風格: " .. st.Name
+	applyStyle(st)
+end)
+
+-------------------------------------------------------------
+-- 旋轉準心腳本邏輯與渲染
+-------------------------------------------------------------
+local visualState = {
+    time = 0,
+    rotationProgress = 0,
+    currentRotationSpeed = 0.8,
+    smoothedRotation = 5,
+    lines = {
+        top = {Size = UDim2.new(0, 3, 0, 25), Position = UDim2.new(0.5, -1.5, 0, 0), Color = Color3.new(1,1,1)},
+        bottom = {Size = UDim2.new(0, 3, 0, 25), Position = UDim2.new(0.5, -1.5, 1, -25), Color = Color3.new(1,1,1)},
+        left = {Size = UDim2.new(0, 25, 0, 3), Position = UDim2.new(0, 0, 0.5, -1.5), Color = Color3.new(1,1,1)},
+        right = {Size = UDim2.new(0, 25, 0, 3), Position = UDim2.new(1, -25, 0.5, -1.5), Color = Color3.new(1,1,1)},
+    },
+    text = {
+        Text = "Yokai.win",
+        Position = UDim2.new(0, 0, 0, 0),
+        Color = Color3.new(1,1,1),
+        Font = Enum.Font.Arcade,
+        TextScaled = true,
+    }
+}
+
+local screenGui
+local aimContainer
+local topLine, bottomLine, leftLine, rightLine
+local textLabel
+
+local baseRotationSpeed = 0.8
+local pulseSpeed = 2.5
+local minLength = -10
+local maxLength = -30
+
+local time = 0
+local rotationProgress = 0
+local currentRotationSpeed = baseRotationSpeed
+local smoothedRotation = 5
+
+local function createLine(parent, size, position, color)
+    local frame = Instance.new("Frame")
+    frame.Size = size
+    frame.Position = position
+    frame.BackgroundColor3 = color
+    frame.BorderSizePixel = 0
+    frame.ZIndex = 5
+    frame.Parent = parent
+
+    local stroke = Instance.new("UIStroke")
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Color = Color3.new(0,0,0)
+    stroke.Thickness = 1
+    stroke.Parent = frame
+
+    return frame
+end
+
+local function createTextLabel(parent, text, position, color, font, scaled)
+    local label = Instance.new("TextLabel")
+    label.Text = text
+    label.Position = position
+    label.TextColor3 = color
+    label.Font = font
+    label.TextScaled = scaled
+    label.BackgroundTransparency = 1
+    label.Size = UDim2.new(0, 150, 0, 23)
+    label.ZIndex = 10
+    label.Parent = parent
+
+    local stroke = Instance.new("UIStroke")
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+    stroke.Color = Color3.new(0,0,0)
+    stroke.Thickness = 1
+    stroke.LineJoinMode = Enum.LineJoinMode.Round
+    stroke.Parent = label
+
+    return label
+end
+
+local function clearGui()
+    if screenGui then
+        screenGui:Destroy()
+        screenGui = nil
+    end
+end
+
+local function createGui()
+    clearGui()
+
+    screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "AimSightGUI"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = PlayerGui
+
+    aimContainer = Instance.new("Frame")
+    aimContainer.BackgroundTransparency = 1
+    aimContainer.Size = UDim2.new(0, 25, 0, 25)
+    aimContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+    aimContainer.Parent = screenGui
+
+    topLine = createLine(aimContainer, visualState.lines.top.Size, visualState.lines.top.Position, visualState.lines.top.Color)
+    bottomLine = createLine(aimContainer, visualState.lines.bottom.Size, visualState.lines.bottom.Position, visualState.lines.bottom.Color)
+    leftLine = createLine(aimContainer, visualState.lines.left.Size, visualState.lines.left.Position, visualState.lines.left.Color)
+    rightLine = createLine(aimContainer, visualState.lines.right.Size, visualState.lines.right.Position, visualState.lines.right.Color)
+
+    textLabel = createTextLabel(screenGui, visualState.text.Text, visualState.text.Position, visualState.text.Color, visualState.text.Font, visualState.text.TextScaled)
+end
+
+local function getRainbowColor(t)
+    local r = math.sin(t * 0.6) * 0.5 + 0.5
+    local g = math.sin(t * 0.6 + 2) * 0.5 + 0.5
+    local b = math.sin(t * 0.6 + 4) * 0.5 + 0.5
+    return Color3.new(r, g, b)
+end
+
+local function calculateRotationSpeed(progress)
+    local slowdownStart = 0.6
+    local slowdownDuration = 0.35
+    local minSlowdownSpeed = 0.3
+    local baseRotationSpeedLocal = baseRotationSpeed
+
+    if progress >= slowdownStart then
+        local slowdownProgress = (progress - slowdownStart) / slowdownDuration
+        local easedProgress = slowdownProgress * slowdownProgress
+        local slowdownFactor = 1 - (easedProgress * (1 - minSlowdownSpeed))
+        return baseRotationSpeedLocal * math.max(slowdownFactor, minSlowdownSpeed)
+    else
+        return baseRotationSpeedLocal
+    end
+end
+
+local function smoothRotation(currentRot, targetRot, smoothing)
+    return currentRot + (targetRot - currentRot) * smoothing
+end
+
+local function smoothPulse(t, speed)
+    local rawPulse = math.sin(t * speed) * 0.5 + 0.5
+    return rawPulse * rawPulse
+end
+
+createGui()
 
 -------------------------------------------------------------
 -- 分頁切換邏輯
@@ -604,8 +822,49 @@ end
 for _, p in ipairs(Players:GetPlayers()) do setupESP(p) end
 Players.PlayerAdded:Connect(setupESP)
 
-RunService.RenderStepped:Connect(function()
-	if frame.Visible then stroke.Color = Color3.fromHSV((tick() * 0.5) % 1, 1, 1) end
+RunService.RenderStepped:Connect(function(deltaTime)
+	-- 旋轉準心渲染與開關控制
+	if crosshairOn then
+		if not screenGui or not screenGui.Parent then
+			createGui()
+		end
+		time = time + deltaTime
+		aimContainer.Position = UDim2.new(0, Mouse.X, 0, Mouse.Y)
+		textLabel.Position = UDim2.new(0, Mouse.X - 70, 0, Mouse.Y + 50)
+
+		rotationProgress = (rotationProgress + currentRotationSpeed * deltaTime) % 1
+		currentRotationSpeed = calculateRotationSpeed(rotationProgress)
+
+		local targetRotation = rotationProgress * 360
+		smoothedRotation = smoothRotation(smoothedRotation, targetRotation, 1)
+		aimContainer.Rotation = smoothedRotation
+
+		local pulse = smoothPulse(time, pulseSpeed)
+		local currentLength = minLength + (maxLength - minLength) * pulse
+
+		topLine.Size = UDim2.new(0, 3, 0, currentLength)
+		bottomLine.Size = UDim2.new(0, 3, 0, currentLength)
+		leftLine.Size = UDim2.new(0, currentLength, 0, 3)
+		rightLine.Size = UDim2.new(0, currentLength, 0, 3)
+
+		topLine.Position = UDim2.new(0.5, -1.5, 0, 0)
+		bottomLine.Position = UDim2.new(0.5, -1.5, 1, -currentLength)
+		leftLine.Position = UDim2.new(0, 0, 0.5, -1.5)
+		rightLine.Position = UDim2.new(1, -currentLength, 0.5, -1.5)
+
+		local rainbowColor = getRainbowColor(time)
+		topLine.BackgroundColor3 = rainbowColor
+		bottomLine.BackgroundColor3 = rainbowColor
+		leftLine.BackgroundColor3 = rainbowColor
+		rightLine.BackgroundColor3 = rainbowColor
+		textLabel.TextColor3 = rainbowColor
+		
+		screenGui.Enabled = true
+	else
+		if screenGui then
+			screenGui.Enabled = false
+		end
+	end
 
 	-- Aimbot FOV 圓圈位置（固定在畫面正中央）
 	if aimbotActive and fovCircleEnabled then
@@ -634,6 +893,13 @@ RunService.RenderStepped:Connect(function()
 	end
 	if customFovOn then
 		Cam.FieldOfView = targetFov
+	end
+
+	-- 執行護航風格設定
+	if activeStyle then
+		Lighting.ClockTime = activeStyle.ClockTime
+		Lighting.Ambient = activeStyle.Ambient
+		Lighting.OutdoorAmbient = activeStyle.OutdoorAmbient
 	end
 
 	-- 執行 Misc 功能
